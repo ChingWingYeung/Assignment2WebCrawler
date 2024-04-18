@@ -17,19 +17,26 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    hyperlinks = []
-    # Check if the response status code is 200
-    if resp.status != 200:
+    extracted_urls = []
+    # Check if the response is valid
+    if resp.status != 200 or is_valid(resp.url) == False:
         # Print out the error message
         print("Error:", resp.status, resp.error)
         return []
-
-        # Parse the content using BeautifulSoup
     try:
-        soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
-        '''Need to do: Extract relevant data'''
+        # Parse the content and extract links
+        parsed_content = parse_content(resp.raw_response.content)
+        urls = get_all_hyperlinks(parsed_content)
+
+        # Normalize and filter the URLs
+        for extracted_url in urls:
+            normalized_url = normalize_url(url, extracted_url)
+            if should_follow_url(normalized_url):
+                extracted_urls.append(normalized_url)
+
         # Return the parsed content
-        return hyperlinks
+        return extracted_urls
+
     except Exception as e:
         print("Error:", e)
         return []
@@ -56,3 +63,21 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+def parse_content(content):
+    # Parse the HTML content using BeautifulSoup
+    parsed_content = BeautifulSoup(content, 'html.parser')
+    return parsed_content
+
+def get_all_hyperlinks(parsed_content):
+    extracted_urls = []
+    for link in parsed_content.find_all('a', href = True):
+        href = link.get('href')
+        extracted_urls.append(href)
+    return extracted_urls
+
+def normalize_url(base_url, extracted_url):
+    return normalized_url
+
+def should_follow_url(url):
+    return True
