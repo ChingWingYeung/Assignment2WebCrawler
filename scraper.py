@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 import requests
 from bs4 import BeautifulSoup
 
@@ -77,7 +77,14 @@ def get_all_hyperlinks(parsed_content):
     return extracted_urls
 
 def normalize_url(base_url, extracted_url):
+    # Resolve relative URLs to absolute URLs
+    absolute_url = urljoin(base_url, extracted_url)
+    # Remove fragments
+    parsed_url = urlparse(absolute_url)
+    normalized_url = parsed_url.scheme + "://" + parsed_url.netloc + parsed_url.path
     return normalized_url
 
 def should_follow_url(url):
-    return True
+    parsed_url = urlparse(url)
+    # Follow only URLs that start with "http" or "https"
+    return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
