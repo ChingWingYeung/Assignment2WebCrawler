@@ -88,3 +88,15 @@ def should_follow_url(url):
     parsed_url = urlparse(url)
     # Follow only URLs that start with "http" or "https"
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
+
+def count_unique_pages(crawled_urls):
+    return 0
+
+def longest_page(crawled_urls):
+    pass
+
+def common_words(crawled_urls):
+    pass
+
+def count_subdomains(crawled_urls):
+    pass
