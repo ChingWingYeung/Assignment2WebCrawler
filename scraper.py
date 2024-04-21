@@ -90,7 +90,15 @@ def should_follow_url(url):
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
 
 def count_unique_pages(crawled_urls):
-    return 0
+    unique_url_list = []
+    unique_pages = 0
+    for url in crawled_urls:
+        if url not in unique_url_list:
+            unique_url_list.append(url)
+            unique_pages += 1
+
+    return unique_pages
+
 
 def longest_page(crawled_urls):
     pass
