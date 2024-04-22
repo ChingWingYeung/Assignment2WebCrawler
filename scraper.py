@@ -55,6 +55,10 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+        elif not re.match(
+             r".*.(ics|cs|informatics|stat)"
+            + r".uci.edu$", parsed.hostname.lower()):
+            return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
