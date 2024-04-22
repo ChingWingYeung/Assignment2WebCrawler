@@ -1,7 +1,12 @@
 import re
 from urllib.parse import urlparse, urljoin
+
+import nltk
 import requests
 from bs4 import BeautifulSoup
+from nltk.corpus import stopwords
+from collections import Counter
+
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -114,8 +119,20 @@ def longest_page(crawled_urls):
 
     return longest_page_url, max_word_count
 
-def common_words(crawled_urls):
-    pass
+def common_words(text):
+    # Tokenize the text
+    tokens = nltk.word_tokenize(text)
+    # Remove punctuation
+    tokens = [word.lower() for word in tokens if word.isalnum()]
+    # Remove English stop words
+    stop_words = set(stopwords.words('english'))
+    filtered_tokens = [word for word in tokens if word not in stop_words]
+    # Count word frequencies
+    word_freq = Counter(filtered_tokens)
+    # Find the 50 most common words
+    most_common_words = word_freq.most_common(50)
+
+    return most_common_words
 
 def count_subdomains(crawled_urls):
     pass
