@@ -2,7 +2,7 @@ import re
 from urllib.parse import urlparse, urljoin
 
 import nltk
-'''import requests'''
+
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from collections import Counter
@@ -102,22 +102,6 @@ def count_unique_pages(crawled_urls):
         unique_urls.add(url_without_fragment)
 
     return len(unique_urls)
-
-'''def longest_page(crawled_urls):
-    longest_page_url = None
-    max_word_count = 0
-
-    for url in crawled_urls:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        # Count the word in current url
-        word_count = len(soup.get_text().split())
-        # Check if it's longer than previous urls
-        if word_count > max_word_count:
-            max_word_count = word_count
-            longest_page_url = url
-
-    return longest_page_url, max_word_count'''
 
 def common_words(text):
     # Tokenize the text
