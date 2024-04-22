@@ -90,14 +90,13 @@ def should_follow_url(url):
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
 
 def count_unique_pages(crawled_urls):
-    unique_url_list = []
-    unique_pages = 0
+    unique_urls = set() # Use a set to store unique URLs
     for url in crawled_urls:
-        if url not in unique_url_list:
-            unique_url_list.append(url)
-            unique_pages += 1
+        # Remove fragment part from the URL
+        url_without_fragment = url.split("#")[0]
+        unique_urls.add(url_without_fragment)
 
-    return unique_pages
+    return len(unique_urls)
 
 
 def longest_page(crawled_urls):
