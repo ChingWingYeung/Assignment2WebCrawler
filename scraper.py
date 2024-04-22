@@ -24,7 +24,7 @@ def extract_next_links(url, resp):
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     extracted_urls = []
     # Check if the response is valid
-    if resp.status != 200 or is_valid(resp.url) == False:
+    if resp.status != 200 or (is_valid(resp.url) == False):
         # Print out the error message
         print("Error:", resp.status, resp.error)
         return []
