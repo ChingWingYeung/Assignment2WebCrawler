@@ -135,4 +135,12 @@ def common_words(text):
     return most_common_words
 
 def count_subdomains(crawled_urls):
-    pass
+    subdomain_count = 0 #initialize the subdomain_count
+    for url in crawled_urls: #iterate through the parameters
+        parsed_url = urlparse(url)
+        seperated_subdomain = parsed_url.netloc #.netloc is to get the net location of the subdomain
+        domain_parts = seperated_subdomain.split(".") #split the domain by parts
+        if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": #making sure that's a subdomain
+            subdomain_count += 1 #increment the count
+
+    return subdomain_count
