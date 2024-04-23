@@ -2,7 +2,6 @@ import re
 from urllib.parse import urlparse, urljoin
 
 import nltk
-
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from collections import Counter
@@ -29,7 +28,7 @@ def extract_next_links(url, resp):
         print("Error:", resp.status, resp.error)
         return []
     else:
-        if not is_dead_url(resp):
+        if not is_dead_url(resp) and detect_and_avoid_large_files(resp):
             try:
 
                 # Parse the content and extract links
@@ -65,6 +64,10 @@ def is_valid(url):
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
+            return False
+        elif not re.match(
+                r".*.(ics|cs|informatics|stat)"
+                + r".uci.edu$", parsed.hostname.lower()):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -114,22 +117,6 @@ def count_unique_pages(crawled_urls):
 
     return len(unique_urls)
 
-def longest_page(crawled_urls):
-    longest_page_url = None
-    max_word_count = 0
-
-    for url in crawled_urls:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        # Count the word in current url
-        word_count = len(soup.get_text().split())
-        # Check if it's longer than previous urls
-        if word_count > max_word_count:
-            max_word_count = word_count
-            longest_page_url = url
-
-    return longest_page_url, max_word_count
-
 def common_words(text):
     # Tokenize the text
     tokens = nltk.word_tokenize(text)
@@ -155,3 +142,11 @@ def count_subdomains(crawled_urls):
             subdomain_count += 1 #increment the count
 
     return subdomain_count
+
+def detect_and_avoid_large_files(resp):
+    '''Detect and avoid crawling very large files, especially if they have low information value'''
+    max_file_size = 10 * 1024 * 1024 #set the max file size to 10MB
+    url_content_length = len(resp.raw_response.content)
+    if url_content_length > max_file_size:
+        return True
+    return False
