@@ -39,6 +39,9 @@ def extract_next_links(url, resp):
             if should_follow_url(normalized_url):
                 extracted_urls.append(normalized_url)
 
+        # Detect traps
+        detect_traps(extracted_urls) # what should we do if we detect a trap?
+
         # Return the parsed content
         return extracted_urls
 
@@ -97,6 +100,19 @@ def should_follow_url(url):
     parsed_url = urlparse(url)
     # Follow only URLs that start with "http" or "https"
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
+
+def detect_traps(crawled_urls):
+    # Identify repeated URL patterns
+    url_patterns = [urlparse(url) for url in crawled_urls]
+    url_pattern_counts = Counter(url_patterns)
+    # We can change URL Pattern Repetition Threshold...
+    # if the same URL pattern (e.g., /category/product) appears more than --- times
+    # we will say it is a trap??? (change count > 1)
+    repeated_url_patterns = [pattern for pattern, count in url_pattern_counts.items() if count > 1]
+    if repeated_url_patterns:
+        print("Potential trap detected: Repeated URL patterns:", repeated_url_patterns)
+
+    # we could also write a webpage content similarity repetition detection system?
 
 def count_unique_pages(crawled_urls):
     unique_urls = set() # Use a set to store unique URLs
