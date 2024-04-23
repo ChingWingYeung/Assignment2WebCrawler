@@ -2,7 +2,7 @@ import re
 from urllib.parse import urlparse, urljoin
 
 import nltk
-import requests
+
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from collections import Counter
@@ -28,23 +28,28 @@ def extract_next_links(url, resp):
         # Print out the error message
         print("Error:", resp.status, resp.error)
         return []
-    try:
-        # Parse the content and extract links
-        parsed_content = parse_content(resp.raw_response.content)
-        urls = get_all_hyperlinks(parsed_content)
+    else:
+        if not is_dead_url(resp):
+            try:
 
-        # Normalize and filter the URLs
-        for extracted_url in urls:
-            normalized_url = normalize_url(url, extracted_url)
-            if should_follow_url(normalized_url):
-                extracted_urls.append(normalized_url)
+                # Parse the content and extract links
+                parsed_content = parse_content(resp.raw_response.content)
+                urls = get_all_hyperlinks(parsed_content)
 
-        # Return the parsed content
-        return extracted_urls
+                # Normalize and filter the URLs
+                for extracted_url in urls:
+                    normalized_url = normalize_url(url, extracted_url)
+                    if should_follow_url(normalized_url):
+                        extracted_urls.append(normalized_url)
 
-    except Exception as e:
-        print("Error:", e)
-        return []
+                # Return the parsed content
+                return extracted_urls
+
+            except Exception as e:
+                print("Error:", e)
+                return []
+        else:
+            print(f"Dead URL link with no meaningful content: {resp.url}")
 
 def is_dead_url(resp):
     if len(resp.raw_response.content) == 0:
