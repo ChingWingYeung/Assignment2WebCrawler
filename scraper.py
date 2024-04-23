@@ -24,38 +24,29 @@ def extract_next_links(url, resp):
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     extracted_urls = []
     # Check if the response is valid
-    if resp.status != 200 or is_valid(resp.url) == False:
+    if resp.status != 200 or (is_valid(resp.url) == False):
         # Print out the error message
         print("Error:", resp.status, resp.error)
         return []
-    if not is_dead_url(resp):
-        try:
+    try:
+        # Parse the content and extract links
+        parsed_content = parse_content(resp.raw_response.content)
+        urls = get_all_hyperlinks(parsed_content)
 
-            # Parse the content and extract links
-            parsed_content = parse_content(resp.raw_response.content)
-            urls = get_all_hyperlinks(parsed_content)
+        # Normalize and filter the URLs
+        for extracted_url in urls:
+            normalized_url = normalize_url(url, extracted_url)
+            if should_follow_url(normalized_url):
+                extracted_urls.append(normalized_url)
 
-            # Normalize and filter the URLs
-            for extracted_url in urls:
-                normalized_url = normalize_url(url, extracted_url)
-                if should_follow_url(normalized_url):
-                    extracted_urls.append(normalized_url)
+        # Return the parsed content
+        return extracted_urls
 
-            # Return the parsed content
-            return extracted_urls
+    except Exception as e:
+        print("Error:", e)
+        return []
 
 
-        except Exception as e:
-            print("Error:", e)
-            return []
-    else:
-        print(f"Dead and no meaningful URL found: {resp.url}")
-
-def is_dead_url(resp):
-    if len(resp.raw_response.content) == 0:
-        return True
-    else:
-        return False
 def is_valid(url):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
