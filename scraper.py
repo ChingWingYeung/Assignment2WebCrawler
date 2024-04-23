@@ -46,6 +46,12 @@ def extract_next_links(url, resp):
         print("Error:", e)
         return []
 
+def is_dead_url(resp):
+    if len(resp.raw_response.content) == 0:
+        return True
+    else:
+        return False
+
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
