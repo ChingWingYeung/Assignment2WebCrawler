@@ -1,4 +1,6 @@
 import re
+import time
+
 from urllib.parse import urlparse, urljoin
 
 import nltk
@@ -28,7 +30,7 @@ def extract_next_links(url, resp):
         print("Error:", resp.status, resp.error)
         return []
     else:
-        if not is_dead_url(resp) and detect_and_avoid_large_files(resp):
+        if not is_dead_url(resp) and detect_and_avoid_large_files(resp) and detect_and_avoid_infinite_traps(resp):
             try:
 
                 # Parse the content and extract links
@@ -48,7 +50,7 @@ def extract_next_links(url, resp):
                 print("Error:", e)
                 return []
         else:
-            print(f"Dead URL link with no meaningful content: {resp.url}")
+            return []
 
 def is_dead_url(resp):
     if len(resp.raw_response.content) == 0:
@@ -150,3 +152,26 @@ def detect_and_avoid_large_files(resp):
     if url_content_length > max_file_size:
         return True
     return False
+
+def detect_and_avoid_infinite_traps(resp):
+    '''Detect and avoid infinite traps'''
+    # Store urls in a dict
+    visited_urls = {}
+    url = resp.url
+    # Check visited time
+    if url in visited_urls:
+        visited_urls[url] += 1
+        # Consider the url an infinite trap if visit count exceeds three times
+        if visited_urls[url] >= 3:
+            return True
+    else:
+        # Add the URL to visited_urls dict
+        visited_urls[url] = 1
+
+    # Check response time
+    start_time = time.time()
+    # Consider the url an infinite trap if wait more than 20 secs
+    while time.time() - start_time < 20:
+        if resp.status == 200:
+            return False
+    return True
