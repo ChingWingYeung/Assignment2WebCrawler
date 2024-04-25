@@ -30,7 +30,10 @@ def extract_next_links(url, resp):
         print("Error:", resp.status, resp.error)
         return []
     else:
-        if not is_dead_url(resp) and detect_and_avoid_large_files(resp) and detect_and_avoid_infinite_traps(resp):
+        if (not is_dead_url(resp) and
+                not detect_and_avoid_large_files(resp) and
+                not detect_and_avoid_infinite_traps(resp) and
+                not detect_and_avoid_repeated_patterns(url)):
             try:
 
                 # Parse the content and extract links
@@ -175,3 +178,14 @@ def detect_and_avoid_infinite_traps(resp):
         if resp.status == 200:
             return False
     return True
+
+def detect_and_avoid_repeated_patterns(url):
+    '''You should write simple automatic trap detection systems based on repeated URL patterns'''
+    # Store patterns in a set
+    url_patterns = set()
+    # If the same URL pattern appears more than once we will say it is a trap
+    if url in url_patterns:
+        return True
+    else:
+        url_patterns.add(url)
+        return False
