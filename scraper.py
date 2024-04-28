@@ -43,7 +43,7 @@ def extract_next_links(url, resp):
         if (not is_dead_url(resp) and
                 not detect_and_avoid_large_files(resp) and
                 not detect_and_avoid_infinite_traps(resp) and
-                not detect_and_avoid_repeated_patterns(url)):
+                not detect_and_avoid_repeated_patterns(resp.url)):
             try:
 
                 # Parse the content and extract links
