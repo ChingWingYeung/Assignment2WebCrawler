@@ -11,6 +11,16 @@ from collections import Counter
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
+    unique_page_count = count_unique_pages(links)
+    subdomains_count = count_subdomains(links)
+    longest_page, max_word_count, tokens = largest_page(links)
+    fifty_common_words = common_words(tokens)
+
+    print(f"There are {unique_page_count} unique pages.")
+    print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
+    print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
+    print(f"There are {subdomains_count} subdomains in the ics.uci.edu domain")
+
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
