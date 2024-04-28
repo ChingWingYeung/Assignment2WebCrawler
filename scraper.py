@@ -114,6 +114,7 @@ def should_follow_url(url):
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
 
 def count_unique_pages(crawled_urls):
+    '''How many unique pages did you find?'''
     unique_urls = set() # Use a set to store unique URLs
     for url in crawled_urls:
         # Remove fragment part from the URL
@@ -122,9 +123,28 @@ def count_unique_pages(crawled_urls):
 
     return len(unique_urls)
 
-def common_words(text):
-    # Tokenize the text
-    tokens = nltk.word_tokenize(text)
+def largest_page(pages):
+    '''What is the longest page in terms of the number of words?'''
+    max_words = 0
+    longest_page = None
+    tokens = []
+
+    for page in pages:
+        # Extract text
+        text = page.get_text(separator=' ')
+        # Tokenize the text to count words
+        num_words = len(nltk.word_tokenize(text))
+        # Save all words in a list
+        tokens.append(nltk.word_tokenize(text))
+        # Update if the current page is larger
+        if num_words > max_words:
+            max_words = num_words
+            longest_page = page
+
+    return longest_page, max_words, tokens
+
+def common_words(tokens):
+    '''What are the 50 most common words?'''
     # Remove punctuation
     tokens = [word.lower() for word in tokens if word.isalnum()]
     # Remove English stop words
@@ -138,6 +158,7 @@ def common_words(text):
     return most_common_words
 
 def count_subdomains(crawled_urls):
+    '''How many subdomains did you find in the ics.uci.edu domain?'''
     subdomain_count = 0 #initialize the subdomain_count
     for url in crawled_urls: #iterate through the parameters
         parsed_url = urlparse(url)
