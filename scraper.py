@@ -45,7 +45,7 @@ def extract_next_links(url, resp):
                 not detect_and_avoid_infinite_traps(resp) and
                 not detect_and_avoid_repeated_patterns(resp.url)):
             try:
-                check_pointer(url)
+                check_politeness(url)
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
@@ -224,16 +224,16 @@ def detect_and_avoid_repeated_patterns(url):
 
 last_time_visit = {}
 def check_politeness(url, delay=0.5):
-    domain = url.netloc #uci.edu
+    domain = url.netloc # uci.edu
     current_time = time.time()
-    if domain in last_time_vist: # check if domain has been visited before.
+    if domain in last_time_visit: # check if domain has been visited before.
         time_since_last_visit = current_time - last_time_visit[domain]
         if time_since_last_visit < delay:    # if last vist  less than the required politeness, should wait
             time_to_wait = delay - time_since_last_visit
             time.sleep(time_to_wait)    # wait for politeness
     last_time_visit[domain] = time.time() # store the last time vist again
 
-
+def
 
 
 
