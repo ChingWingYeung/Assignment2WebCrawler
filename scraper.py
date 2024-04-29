@@ -45,6 +45,7 @@ def extract_next_links(url, resp):
                 not detect_and_avoid_infinite_traps(resp) and
                 not detect_and_avoid_repeated_patterns(resp.url)):
             try:
+                check_pointer(url)
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
