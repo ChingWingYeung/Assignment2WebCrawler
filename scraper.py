@@ -225,12 +225,12 @@ last_time_visit = {}
 def check_politeness(url, delay=0.5):
     domain = url.netloc #uci.edu
     current_time = time.time()
-    if domain in last_time_vist:
+    if domain in last_time_vist: # check if domain has been visited before.
         time_since_last_visit = current_time - last_time_visit[domain]
-        if time_since_last_visit < delay:
+        if time_since_last_visit < delay:    # if last vist  less than the required politeness, should wait
             time_to_wait = delay - time_since_last_visit
-            time.sleep(time_to_wait)
-    last_time_visit[domain] = time.time()
+            time.sleep(time_to_wait)    # wait for politeness
+    last_time_visit[domain] = time.time() # store the last time vist again
 
 
 
