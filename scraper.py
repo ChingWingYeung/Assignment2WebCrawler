@@ -143,7 +143,7 @@ def largest_page(pages):
         # Extract text
         text = page.get_text(separator=' ')
         # Tokenize the text to count words
-        num_words = len(nltk.word_tokenize(text))
+        num_words = len(nltk.word_tokenize(text)) # count the number of words
         # Save all words in a list
         tokens.append(nltk.word_tokenize(text))
         # Update if the current page is larger
@@ -169,13 +169,13 @@ def common_words(tokens):
 
 def count_subdomains(crawled_urls):
     '''How many subdomains did you find in the ics.uci.edu domain?'''
-    subdomain_count = 0 #initialize the subdomain_count
-    for url in crawled_urls: #iterate through the parameters
+    subdomain_count = 0 # initialize the subdomain_count
+    for url in crawled_urls: # iterate through the parameters
         parsed_url = urlparse(url)
-        seperated_subdomain = parsed_url.netloc #.netloc is to get the net location of the subdomain
-        domain_parts = seperated_subdomain.split(".") #split the domain by parts
-        if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": #making sure that's a subdomain
-            subdomain_count += 1 #increment the count
+        seperated_subdomain = parsed_url.netloc # .netloc is to get the net location of the subdomain
+        domain_parts = seperated_subdomain.split(".") # split the domain by parts
+        if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": # making sure that's a subdomain
+            subdomain_count += 1 # increment the count
 
     return subdomain_count
 
@@ -220,3 +220,19 @@ def detect_and_avoid_repeated_patterns(url):
     else:
         url_patterns.add(url)
         return False
+
+last_time_visit = {}
+def check_politeness(url, delay=0.5):
+    domain = url.netloc #uci.edu
+    current_time = time.time()
+    if domain in last_time_vist:
+        time_since_last_visit = current_time - last_time_visit[domain]
+        if time_since_last_visit < delay:
+            time_to_wait = delay - time_since_last_visit
+            time.sleep(time_to_wait)
+    last_time_visit[domain] = time.time()
+
+
+
+
+
