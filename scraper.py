@@ -237,6 +237,7 @@ def detect_and_avoid_repeated_patterns(url):
 
 last_time_visit = {}
 def check_politeness(url, delay=0.5):
+    '''Honor the politeness delay for each site'''
     domain = url.netloc # uci.edu
     current_time = time.time()
     if domain in last_time_visit: # check if domain has been visited before.
