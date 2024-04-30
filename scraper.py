@@ -243,8 +243,7 @@ def check_politeness(url, delay=0.5):
 def check_content_length(parsed_content):
     '''1) We decided 300 tokens for the minimum amount of text a
           page should contain to be considered valuable.'''
-    element = parsed_content.get('body') # Find the desired element
-    text = element.get_text(separator = ' ') # Extract content
+    text = parsed_content.get_text(separator = ' ') # Extract content
     num_words = len(nltk.word_tokenize(text))  # Count the number of words
     if num_words > 300:
         return True
