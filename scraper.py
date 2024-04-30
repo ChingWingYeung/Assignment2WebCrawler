@@ -35,6 +35,13 @@ def extract_next_links(url, resp):
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     extracted_urls = []
     # Check if the response is valid
+    if resp.status in (301, 302, 307, 308):
+        if "Location" in resp.headers:
+            new_url = urljoin(resp.url, resp.headers['Location'])
+            extracted_urls.append(new_url)
+        else:
+            print("Can't fetch the redirected url")
+            pass
     if resp.status != 200 or (is_valid(resp.url) == False):
         # Print out the error message
         print("Error:", resp.status, resp.error)
@@ -248,3 +255,7 @@ def check_content_length(parsed_content):
     if num_words > 300:
         return True
     return False
+
+
+
+
