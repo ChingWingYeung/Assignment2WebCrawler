@@ -47,10 +47,10 @@ def extract_next_links(url, resp):
         print("Error:", resp.status, resp.error)
         return []
     else:
-        if (not is_dead_url(resp) and
-                not detect_and_avoid_large_files(resp) and
-                not detect_and_avoid_infinite_traps(resp) and
-                not detect_and_avoid_repeated_patterns(resp.url)):
+        if (not is_dead_url(resp)
+                and not detect_and_avoid_large_files(resp)
+                and not detect_and_avoid_infinite_traps(resp)
+                and not detect_and_avoid_repeated_patterns(resp.url)):
             try:
                 check_politeness(url)
 
@@ -58,7 +58,8 @@ def extract_next_links(url, resp):
                 parsed_content = parse_content(resp.raw_response.content)
 
                 # Identify high textual information content
-                if check_content_length(parsed_content):
+                if (check_content_length(parsed_content)
+                        and check_missing_title(parsed_content)):
                     # Get URLs
                     urls = get_all_hyperlinks(parsed_content)
 
@@ -256,6 +257,9 @@ def check_content_length(parsed_content):
         return True
     return False
 
-
-
-
+def check_missing_title(parsed_content):
+    '''2) We decided if the title is missing the page might be of low value.'''
+    page_title = parsed_content.find('title')
+    if page_title:
+        return True
+    return False
