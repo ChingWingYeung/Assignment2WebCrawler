@@ -49,16 +49,20 @@ def extract_next_links(url, resp):
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
-                urls = get_all_hyperlinks(parsed_content)
 
-                # Normalize and filter the URLs
-                for extracted_url in urls:
-                    normalized_url = normalize_url(url, extracted_url)
-                    if should_follow_url(normalized_url):
-                        extracted_urls.append(normalized_url)
+                # Identify high textual information content
+                if check_content_length(parsed_content):
+                    # Get URLs
+                    urls = get_all_hyperlinks(parsed_content)
 
-                # Return the parsed content
-                return extracted_urls
+                    # Normalize and filter the URLs
+                    for extracted_url in urls:
+                        normalized_url = normalize_url(url, extracted_url)
+                        if should_follow_url(normalized_url):
+                            extracted_urls.append(normalized_url)
+
+                    # Return the parsed content
+                    return extracted_urls
 
             except Exception as e:
                 print("Error:", e)
@@ -233,7 +237,15 @@ def check_politeness(url, delay=0.5):
             time.sleep(time_to_wait)    # wait for politeness
     last_time_visit[domain] = time.time() # store the last time vist again
 
-def
 
 
-
+# Crawl all pages with high textual information content
+def check_content_length(parsed_content):
+    '''1) We decided 300 tokens for the minimum amount of text a
+          page should contain to be considered valuable.'''
+    element = parsed_content.get('body') # Find the desired element
+    text = element.get_text(separator = ' ') # Extract content
+    num_words = len(nltk.word_tokenize(text))  # Count the number of words
+    if num_words > 300:
+        return True
+    return False
