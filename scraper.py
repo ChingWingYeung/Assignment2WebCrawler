@@ -34,11 +34,12 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     extracted_urls = []
+    redirected_urls = []
     # Check if the response is valid
     if resp.status in (301, 302, 307, 308):
         if "Location" in resp.headers:
             new_url = urljoin(resp.url, resp.headers['Location'])
-            extracted_urls.append(new_url)
+            redirected_urls.append(new_url)
         else:
             print("Can't fetch the redirected url")
             pass
@@ -62,9 +63,9 @@ def extract_next_links(url, resp):
                         and check_missing_title(parsed_content)):
                     # Get URLs
                     urls = get_all_hyperlinks(parsed_content)
-
+                    combined_url_lists = [urls + redirected_urls]
                     # Normalize and filter the URLs
-                    for extracted_url in urls:
+                    for extracted_url in combined_url_lists:
                         normalized_url = normalize_url(url, extracted_url)
                         if should_follow_url(normalized_url):
                             extracted_urls.append(normalized_url)
