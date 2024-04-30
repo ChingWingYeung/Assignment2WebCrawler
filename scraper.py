@@ -7,7 +7,8 @@ import nltk
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from collections import Counter
-
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -234,6 +235,15 @@ def detect_and_avoid_repeated_patterns(url):
     else:
         url_patterns.add(url)
         return False
+
+def is_similar_page(new_content, visited_content, threshold=0.8):
+    # Compare the similarity of the new content with visited content
+    tfidf_vectorizer = TfidfVectorizer()
+    corpus = [new_content] + visited_content
+    tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
+    similarity_matrix = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+    max_similarity = max(similarity_matrix)
+    return max_similarity > threshold
 
 last_time_visit = {}
 def check_politeness(url, delay=0.5):
