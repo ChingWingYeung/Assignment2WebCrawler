@@ -64,7 +64,7 @@ def extract_next_links(url, resp):
                         and check_missing_title(parsed_content)):
                     # Get URLs
                     urls = get_all_hyperlinks(parsed_content)
-                    combined_url_lists = [urls + redirected_urls]
+                    combined_url_lists = urls + redirected_urls
                     # Normalize and filter the URLs
                     for extracted_url in combined_url_lists:
                         normalized_url = normalize_url(url, extracted_url)
@@ -237,7 +237,6 @@ def detect_and_avoid_repeated_patterns(url):
         return False
 
 def is_similar_page(new_content, visited_content, threshold=0.8):
-    # Compare the similarity of the new content with visited content
     tfidf_vectorizer = TfidfVectorizer()
     corpus = [new_content] + visited_content
     tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
