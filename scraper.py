@@ -11,16 +11,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def scraper(url, resp):
-    links, longest_page, max_word_count = extract_next_links(url, resp)
+    links, longest_page, max_word_count, word_freq = extract_next_links(url, resp)
     unique_page_count = count_unique_pages(links)
     subdomains_count = count_subdomains(links)
-    # longest_page, max_word_count, tokens = largest_page(links)
-    # fifty_common_words = common_words(tokens)
+    fifty_common_words = word_freq.most_common(50)
 
     print(f"There are {unique_page_count} unique pages.")
     print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
-    # print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
-    print(f"There are {subdomains_count} subdomains in the ics.uci.edu domain")
+    print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
+    print(f"There are {subdomains_count} subdomains in the ics.uci.edu domain.")
 
     return [link for link in links if is_valid(link)]
 
@@ -62,7 +61,7 @@ def extract_next_links(url, resp):
                 # Find the longest page
                 max_words = 0
                 longest_page = None
-                num_words = extract_text(parsed_content)
+                num_words, word_freq = extract_text(parsed_content)
                 if num_words > max_words:
                     max_words = num_words
                     longest_page = resp.url
@@ -80,7 +79,7 @@ def extract_next_links(url, resp):
                             extracted_urls.append(normalized_url)
 
                     # Return the parsed content
-                    return extracted_urls, longest_page, max_words
+                    return extracted_urls, longest_page, max_words, word_freq
 
             except Exception as e:
                 print("Error:", e)
@@ -135,9 +134,21 @@ def extract_text(parsed_content):
         tag_content = parsed_content.find_all(tag)
         for content in tag_content:
             extracted_text += content.get_text() + " "  # Concatenate text from each tag
+
+    # Get text
+    words = nltk.word_tokenize(extracted_text)
+    # Remove punctuation
+    words = [word.lower() for word in words if word.isalnum()]
     # Count the number of words in the extracted text
-    word_count = len(nltk.word_tokenize(extracted_text))
-    return word_count
+    total_word_count = len(words)
+
+    # Remove English stop words
+    stop_words = set(stopwords.words('english'))
+    filtered_words = [word for word in words if word not in stop_words]
+    # Count word frequencies
+    word_freq = Counter(filtered_words)
+
+    return total_word_count, word_freq
 
 
 def get_all_hyperlinks(parsed_content):
@@ -169,40 +180,6 @@ def count_unique_pages(crawled_urls):
         unique_urls.add(url_without_fragment)
 
     return len(unique_urls)
-
-# def largest_page(pages):
-#     '''What is the longest page in terms of the number of words?'''
-#     max_words = 0
-#     longest_page = None
-#     tokens = []
-#
-#     for page in pages:
-#         # Extract text
-#         text = page.get_text(separator=' ')
-#         # Tokenize the text to count words
-#         num_words = len(nltk.word_tokenize(text)) # count the number of words
-#         # Save all words in a list
-#         tokens.append(nltk.word_tokenize(text))
-#         # Update if the current page is larger
-#         if num_words > max_words:
-#             max_words = num_words
-#             longest_page = page
-#
-#     return longest_page, max_words, tokens
-
-def common_words(tokens):
-    '''What are the 50 most common words?'''
-    # Remove punctuation
-    tokens = [word.lower() for word in tokens if word.isalnum()]
-    # Remove English stop words
-    stop_words = set(stopwords.words('english'))
-    filtered_tokens = [word for word in tokens if word not in stop_words]
-    # Count word frequencies
-    word_freq = Counter(filtered_tokens)
-    # Find the 50 most common words
-    most_common_words = word_freq.most_common(50)
-
-    return most_common_words
 
 def count_subdomains(crawled_urls):
     '''How many subdomains did you find in the ics.uci.edu domain?'''
