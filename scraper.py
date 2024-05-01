@@ -11,8 +11,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def scraper(url, resp):
-    links, longest_page, max_word_count, word_freq = extract_next_links(url, resp)
-    unique_page_count = count_unique_pages(links)
+    links, longest_page, max_word_count, word_freq, unique_page_count= extract_next_links(url, resp)
     subdomains_count = count_subdomains(links)
     fifty_common_words = word_freq.most_common(50)
 
@@ -55,6 +54,11 @@ def extract_next_links(url, resp):
             try:
                 check_politeness(url)
 
+                unique_urls = set()  # Use a set to store unique URLs
+                normalized_u = normalize_url(url, resp.url)  # Normalize URL
+                unique_urls.add(normalized_u)
+                url_count = len(unique_urls)  # Count unique URLS
+
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
 
@@ -79,7 +83,7 @@ def extract_next_links(url, resp):
                             extracted_urls.append(normalized_url)
 
                     # Return the parsed content
-                    return extracted_urls, longest_page, max_words, word_freq
+                    return extracted_urls, longest_page, max_words, word_freq, url_count
 
             except Exception as e:
                 print("Error:", e)
@@ -170,16 +174,6 @@ def should_follow_url(url):
     parsed_url = urlparse(url)
     # Follow only URLs that start with "http" or "https"
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
-
-def count_unique_pages(crawled_urls):
-    '''How many unique pages did you find?'''
-    unique_urls = set() # Use a set to store unique URLs
-    for url in crawled_urls:
-        # Remove fragment part from the URL
-        url_without_fragment = url.split("#")[0]
-        unique_urls.add(url_without_fragment)
-
-    return len(unique_urls)
 
 def count_subdomains(crawled_urls):
     '''How many subdomains did you find in the ics.uci.edu domain?'''
