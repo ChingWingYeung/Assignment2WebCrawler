@@ -11,15 +11,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def scraper(url, resp):
-    links = extract_next_links(url, resp)
+    links, longest_page, max_word_count = extract_next_links(url, resp)
     unique_page_count = count_unique_pages(links)
     subdomains_count = count_subdomains(links)
-    longest_page, max_word_count, tokens = largest_page(links)
-    fifty_common_words = common_words(tokens)
+    # longest_page, max_word_count, tokens = largest_page(links)
+    # fifty_common_words = common_words(tokens)
 
     print(f"There are {unique_page_count} unique pages.")
     print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
-    print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
+    # print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
     print(f"There are {subdomains_count} subdomains in the ics.uci.edu domain")
 
     return [link for link in links if is_valid(link)]
@@ -47,7 +47,7 @@ def extract_next_links(url, resp):
     if resp.status != 200 or (is_valid(resp.url) == False):
         # Print out the error message
         print("Error:", resp.status, resp.error)
-        return []
+        pass
     else:
         if (not is_dead_url(resp)
                 and not detect_and_avoid_large_files(resp)
@@ -58,6 +58,14 @@ def extract_next_links(url, resp):
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
+
+                # Find the longest page
+                max_words = 0
+                longest_page = None
+                num_words = extract_text(parsed_content)
+                if num_words > max_words:
+                    max_words = num_words
+                    longest_page = resp.url
 
                 # Identify high textual information content
                 if (check_content_length(parsed_content)
@@ -72,13 +80,13 @@ def extract_next_links(url, resp):
                             extracted_urls.append(normalized_url)
 
                     # Return the parsed content
-                    return extracted_urls
+                    return extracted_urls, longest_page, max_words
 
             except Exception as e:
                 print("Error:", e)
-                return []
+                return [], None, None
         else:
-            return []
+            return [], None, None
 
 def is_dead_url(resp):
     if len(resp.raw_response.content) == 0:
@@ -118,6 +126,20 @@ def parse_content(content):
     parsed_content = BeautifulSoup(content, 'html.parser')
     return parsed_content
 
+def extract_text(parsed_content):
+    # Find all relevant tags containing textual content
+    relevant_tags = ['title', 'p', 'div', 'span', 'h1', 'h2', 'h3', 'h4']
+    # Extract text from each relevant tag
+    extracted_text = ""
+    for tag in relevant_tags:
+        tag_content = parsed_content.find_all(tag)
+        for content in tag_content:
+            extracted_text += content.get_text() + " "  # Concatenate text from each tag
+    # Count the number of words in the extracted text
+    word_count = len(nltk.word_tokenize(extracted_text))
+    return word_count
+
+
 def get_all_hyperlinks(parsed_content):
     extracted_urls = []
     for link in parsed_content.find_all('a', href = True):
@@ -148,25 +170,25 @@ def count_unique_pages(crawled_urls):
 
     return len(unique_urls)
 
-def largest_page(pages):
-    '''What is the longest page in terms of the number of words?'''
-    max_words = 0
-    longest_page = None
-    tokens = []
-
-    for page in pages:
-        # Extract text
-        text = page.get_text(separator=' ')
-        # Tokenize the text to count words
-        num_words = len(nltk.word_tokenize(text)) # count the number of words
-        # Save all words in a list
-        tokens.append(nltk.word_tokenize(text))
-        # Update if the current page is larger
-        if num_words > max_words:
-            max_words = num_words
-            longest_page = page
-
-    return longest_page, max_words, tokens
+# def largest_page(pages):
+#     '''What is the longest page in terms of the number of words?'''
+#     max_words = 0
+#     longest_page = None
+#     tokens = []
+#
+#     for page in pages:
+#         # Extract text
+#         text = page.get_text(separator=' ')
+#         # Tokenize the text to count words
+#         num_words = len(nltk.word_tokenize(text)) # count the number of words
+#         # Save all words in a list
+#         tokens.append(nltk.word_tokenize(text))
+#         # Update if the current page is larger
+#         if num_words > max_words:
+#             max_words = num_words
+#             longest_page = page
+#
+#     return longest_page, max_words, tokens
 
 def common_words(tokens):
     '''What are the 50 most common words?'''
