@@ -1,14 +1,25 @@
 import re
+import time
+
 from urllib.parse import urlparse, urljoin
 
 import nltk
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from collections import Counter
-
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 def scraper(url, resp):
-    links = extract_next_links(url, resp)
+    links, longest_page, max_word_count, word_freq, unique_page_count= extract_next_links(url, resp)
+    subdomains_count = count_subdomains(links)
+    fifty_common_words = word_freq.most_common(50)
+
+    print(f"There are {unique_page_count} unique pages.")
+    print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
+    print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
+    print(f"There are {subdomains_count} subdomains in the ics.uci.edu domain.")
+
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
@@ -22,33 +33,63 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     extracted_urls = []
+    redirected_urls = []
     # Check if the response is valid
+    if resp.status in (301, 302, 307, 308):
+        if "Location" in resp.headers:
+            new_url = urljoin(resp.url, resp.headers['Location'])
+            redirected_urls.append(new_url)
+        else:
+            print("Can't fetch the redirected url")
+            pass
     if resp.status != 200 or (is_valid(resp.url) == False):
         # Print out the error message
         print("Error:", resp.status, resp.error)
-        return []
+        pass
     else:
-        if not is_dead_url(resp) and detect_and_avoid_large_files(resp):
+        if (not is_dead_url(resp)
+                and not detect_and_avoid_large_files(resp)
+                and not detect_and_avoid_infinite_traps(resp)
+                and not detect_and_avoid_repeated_patterns(resp.url)):
             try:
+                check_politeness(url)
+
+                unique_urls = set()  # Use a set to store unique URLs
+                normalized_u = normalize_url(url, resp.url)  # Normalize URL
+                unique_urls.add(normalized_u)
+                url_count = len(unique_urls)  # Count unique URLS
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
-                urls = get_all_hyperlinks(parsed_content)
 
-                # Normalize and filter the URLs
-                for extracted_url in urls:
-                    normalized_url = normalize_url(url, extracted_url)
-                    if should_follow_url(normalized_url):
-                        extracted_urls.append(normalized_url)
+                # Find the longest page
+                max_words = 0
+                longest_page = None
+                num_words, word_freq = extract_text(parsed_content)
+                if num_words > max_words:
+                    max_words = num_words
+                    longest_page = resp.url
 
-                # Return the parsed content
-                return extracted_urls
+                # Identify high textual information content
+                if (check_content_length(parsed_content)
+                        and check_missing_title(parsed_content)):
+                    # Get URLs
+                    urls = get_all_hyperlinks(parsed_content)
+                    combined_url_lists = urls + redirected_urls
+                    # Normalize and filter the URLs
+                    for extracted_url in combined_url_lists:
+                        normalized_url = normalize_url(url, extracted_url)
+                        if should_follow_url(normalized_url):
+                            extracted_urls.append(normalized_url)
+
+                    # Return the parsed content
+                    return extracted_urls, longest_page, max_words, word_freq, url_count
 
             except Exception as e:
                 print("Error:", e)
-                return []
+                return [], None, None
         else:
-            print(f"Dead URL link with no meaningful content: {resp.url}")
+            return [], None, None
 
 def is_dead_url(resp):
     if len(resp.raw_response.content) == 0:
@@ -88,6 +129,32 @@ def parse_content(content):
     parsed_content = BeautifulSoup(content, 'html.parser')
     return parsed_content
 
+def extract_text(parsed_content):
+    # Find all relevant tags containing textual content
+    relevant_tags = ['title', 'p', 'div', 'span', 'h1', 'h2', 'h3', 'h4']
+    # Extract text from each relevant tag
+    extracted_text = ""
+    for tag in relevant_tags:
+        tag_content = parsed_content.find_all(tag)
+        for content in tag_content:
+            extracted_text += content.get_text() + " "  # Concatenate text from each tag
+
+    # Get text
+    words = nltk.word_tokenize(extracted_text)
+    # Remove punctuation
+    words = [word.lower() for word in words if word.isalnum()]
+    # Count the number of words in the extracted text
+    total_word_count = len(words)
+
+    # Remove English stop words
+    stop_words = set(stopwords.words('english'))
+    filtered_words = [word for word in words if word not in stop_words]
+    # Count word frequencies
+    word_freq = Counter(filtered_words)
+
+    return total_word_count, word_freq
+
+
 def get_all_hyperlinks(parsed_content):
     extracted_urls = []
     for link in parsed_content.find_all('a', href = True):
@@ -108,38 +175,15 @@ def should_follow_url(url):
     # Follow only URLs that start with "http" or "https"
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
 
-def count_unique_pages(crawled_urls):
-    unique_urls = set() # Use a set to store unique URLs
-    for url in crawled_urls:
-        # Remove fragment part from the URL
-        url_without_fragment = url.split("#")[0]
-        unique_urls.add(url_without_fragment)
-
-    return len(unique_urls)
-
-def common_words(text):
-    # Tokenize the text
-    tokens = nltk.word_tokenize(text)
-    # Remove punctuation
-    tokens = [word.lower() for word in tokens if word.isalnum()]
-    # Remove English stop words
-    stop_words = set(stopwords.words('english'))
-    filtered_tokens = [word for word in tokens if word not in stop_words]
-    # Count word frequencies
-    word_freq = Counter(filtered_tokens)
-    # Find the 50 most common words
-    most_common_words = word_freq.most_common(50)
-
-    return most_common_words
-
 def count_subdomains(crawled_urls):
-    subdomain_count = 0 #initialize the subdomain_count
-    for url in crawled_urls: #iterate through the parameters
+    '''How many subdomains did you find in the ics.uci.edu domain?'''
+    subdomain_count = 0 # initialize the subdomain_count
+    for url in crawled_urls: # iterate through the parameters
         parsed_url = urlparse(url)
-        seperated_subdomain = parsed_url.netloc #.netloc is to get the net location of the subdomain
-        domain_parts = seperated_subdomain.split(".") #split the domain by parts
-        if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": #making sure that's a subdomain
-            subdomain_count += 1 #increment the count
+        seperated_subdomain = parsed_url.netloc # .netloc is to get the net location of the subdomain
+        domain_parts = seperated_subdomain.split(".") # split the domain by parts
+        if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": # making sure that's a subdomain
+            subdomain_count += 1 # increment the count
 
     return subdomain_count
 
@@ -150,3 +194,78 @@ def detect_and_avoid_large_files(resp):
     if url_content_length > max_file_size:
         return True
     return False
+
+def detect_and_avoid_infinite_traps(resp):
+    '''Detect and avoid infinite traps'''
+    # Store urls in a dict
+    visited_urls = {}
+    url = resp.url
+    # Check visited time
+    if url in visited_urls:
+        visited_urls[url] += 1
+        # Consider the url an infinite trap if visit count exceeds three times
+        if visited_urls[url] >= 3:
+            return True
+    else:
+        # Add the URL to visited_urls dict
+        visited_urls[url] = 1
+
+    # Check response time
+    start_time = time.time()
+    # Consider the url an infinite trap if wait more than 20 secs
+    while time.time() - start_time < 20:
+        if resp.status == 200:
+            return False
+    return True
+
+def detect_and_avoid_repeated_patterns(url):
+    '''You should write simple automatic trap detection systems based on repeated URL patterns'''
+    # Store patterns in a set
+    url_patterns = set()
+    # If the same URL pattern appears more than once we will say it is a trap
+    if url in url_patterns:
+        return True
+    else:
+        url_patterns.add(url)
+        return False
+
+def is_similar_page(new_content, visited_content, threshold=0.8):
+    tfidf_vectorizer = TfidfVectorizer()
+    corpus = [new_content] + visited_content
+    tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
+    similarity_matrix = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+    max_similarity = max(similarity_matrix)
+    return max_similarity > threshold
+
+last_time_visit = {}
+def check_politeness(url, delay=0.5):
+    '''Honor the politeness delay for each site'''
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc # uci.edu
+    current_time = time.time()
+    if domain in last_time_visit: # check if domain has been visited before.
+        time_since_last_visit = current_time - last_time_visit[domain]
+        if time_since_last_visit < delay:    # if last vist  less than the required politeness, should wait
+            time_to_wait = delay - time_since_last_visit
+            time.sleep(time_to_wait)    # wait for politeness
+    last_time_visit[domain] = time.time() # store the last time vist again
+
+
+
+# Crawl all pages with high textual information content
+def check_content_length(parsed_content):
+    '''1) We decided 300 tokens for the minimum amount of text a
+          page should contain to be considered valuable.'''
+    text = parsed_content.get_text(separator = ' ') # Extract content
+    num_words = len(nltk.word_tokenize(text))  # Count the number of words
+    if num_words > 300:
+        return True
+    return False
+
+def check_missing_title(parsed_content):
+    '''2) We decided if the title is missing the page might be of low value.'''
+    page_title = parsed_content.find('title')
+    if page_title:
+        return True
+    return False
+
