@@ -1,6 +1,6 @@
 import re
 import time
-
+import hashlib
 from urllib.parse import urlparse, urljoin
 
 import nltk
@@ -16,7 +16,8 @@ longest_page = None
 max_word_count = 0
 word_freq = Counter()
 subdomain_pages = {}
-
+hashed_list = []
+similar_page_count = 0
 def scraper(url, resp):
     # global unique_urls
     # global longest_page
@@ -32,8 +33,8 @@ def scraper(url, resp):
     # print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
     # print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
     # print("Subdomains:")
-    # for subdomain, pages in subdomain_pages.items():
-    #     print(f"{subdomain}, {len(pages)}")
+    for subdomain, pages in subdomain_pages.items():
+        print(f"{subdomain}, {len(pages)}")
 
     return [link for link in links if is_valid(link)]
 
@@ -52,6 +53,8 @@ def extract_next_links(url, resp):
     global max_word_count
     global word_freq
     global subdomain_pages
+    global hashed_list
+    global similar_page_count
 
     extracted_urls = []
     redirected_urls = []
@@ -76,7 +79,8 @@ def extract_next_links(url, resp):
             try:
                 check_politeness(url)
 
-                normalized_u = normalize_url(url, resp.url)  # Normalize URL
+                normalized_u = normalize_url(url, resp.url)
+                # Normalize URL
                 unique_urls.add(normalized_u)
 
                 parsed_url = urlparse(resp.url)
@@ -90,27 +94,35 @@ def extract_next_links(url, resp):
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
 
-                num_words, word_freq1 = extract_text(parsed_content)
-                word_freq += word_freq1
+                if is_informative(parsed_content) and get_content_hash(parsed_content) not in hashed_list:
+                    new_page_hash = get_content_hash(parsed_content)  # check if the html has content and similar hash
+                    hashed_list.append(new_page_hash)  # append new hash value
 
-                if num_words > max_word_count:
-                    max_word_count = num_words
-                    longest_page = resp.url
+                    num_words, word_freq1 = extract_text(parsed_content)
+                    word_freq += word_freq1
 
-                # Identify high textual information content
-                if (check_content_length(parsed_content)
-                        and check_missing_title(parsed_content)):
-                    # Get URLs
-                    urls = get_all_hyperlinks(parsed_content)
-                    combined_url_lists = urls + redirected_urls
-                    # Normalize and filter the URLs
-                    for extracted_url in combined_url_lists:
-                        normalized_url = normalize_url(url, extracted_url)
-                        if should_follow_url(normalized_url):
-                            extracted_urls.append(normalized_url)
+                    if num_words > max_word_count:
+                        max_word_count = num_words
+                        longest_page = resp.url
 
-                    # Return the parsed content
-                    return extracted_urls
+                    # Identify high textual information content
+                    if (check_content_length(parsed_content)
+                            and check_missing_title(parsed_content)):
+                        # Get URLs
+                        urls = get_all_hyperlinks(parsed_content)
+                        combined_url_lists = urls + redirected_urls
+                        # Normalize and filter the URLs
+                        for extracted_url in combined_url_lists:
+                            normalized_url = normalize_url(url, extracted_url)
+                            if should_follow_url(normalized_url):
+                                extracted_urls.append(normalized_url)
+
+                        # Return the parsed content
+                        return extracted_urls
+                else:
+                    similar_page_count += 1
+                    print("Skipped non-informative or duplicate page")
+                    return []
 
             except Exception as e:
                 print("Error:", e)
@@ -284,3 +296,18 @@ def check_missing_title(parsed_content):
         return True
     return False
 
+
+
+def get_content_hash(content): # hash the url based on content
+    # Remove whitespace and non-content HTML before hashing
+    soup = BeautifulSoup(content, 'html.parser')
+    main_text = soup.get_text().strip() # hexidigest: Convert the binary hash to a hexadecimal string
+    content_hash = hashlib.sha256(main_text.encode('utf-8')).hexdigest() # UTF-8: convert string to bytes
+    return content_hash
+
+def is_informative(content): # check if a parsed url has content
+    soup = BeautifulSoup(content, 'html.parser')
+    text = soup.get_text().strip()
+    if len(text.split()) < 300:  # less than 300 words
+        return False
+    return True

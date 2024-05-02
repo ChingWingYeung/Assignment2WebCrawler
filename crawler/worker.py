@@ -29,11 +29,13 @@ class Worker(Thread):
                 max_word_count = scraper.max_word_count
                 fifty_common_words = scraper.word_freq.most_common(50)
                 subdomain_pages = scraper.subdomain_pages
+                num_similar_page = scraper.similar_page_count
 
                 print(f"There are {unique_page_count} unique pages.")
                 print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
                 print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
                 print("Subdomains:")
+                print(f"There are {num_similar_page} pages that have similar information or no infomation .")
                 for subdomain, pages in subdomain_pages.items():
                     print(f"{subdomain}, {len(pages)}")
 
