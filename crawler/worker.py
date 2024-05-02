@@ -22,6 +22,21 @@ class Worker(Thread):
             tbd_url = self.frontier.get_tbd_url()
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")
+
+                '''check this part!!!'''
+                unique_page_count = len(scraper.unique_urls)  # Count unique URLS
+                longest_page = scraper.longest_page
+                max_word_count = scraper.max_word_count
+                fifty_common_words = scraper.word_freq.most_common(50)
+                subdomain_pages = scraper.subdomain_pages
+
+                print(f"There are {unique_page_count} unique pages.")
+                print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
+                print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
+                print("Subdomains:")
+                for subdomain, pages in subdomain_pages.items():
+                    print(f"{subdomain}, {len(pages)}")
+
                 break
             resp = download(tbd_url, self.config, self.logger)
             self.logger.info(
