@@ -10,15 +10,30 @@ from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+
+unique_urls = set()  # Use a set to store unique URLs
+longest_page = None
+max_word_count = 0
+word_freq = Counter()
+subdomain_pages = {}
+
 def scraper(url, resp):
-    links, longest_page, max_word_count, word_freq, unique_page_count= extract_next_links(url, resp)
-    subdomains_count = count_subdomains(links)
+    global unique_urls
+    global longest_page
+    global max_word_count
+    global word_freq
+    global subdomain_pages
+
+    links= extract_next_links(url, resp)
     fifty_common_words = word_freq.most_common(50)
+    unique_page_count = len(unique_urls)  # Count unique URLS
 
     print(f"There are {unique_page_count} unique pages.")
     print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
     print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
-    print(f"There are {subdomains_count} subdomains in the ics.uci.edu domain.")
+    print("Subdomains:")
+    for subdomain, pages in subdomain_pages.items():
+        print(f"{subdomain}, {len(pages)}")
 
     return [link for link in links if is_valid(link)]
 
@@ -32,8 +47,15 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
+    global unique_urls
+    global longest_page
+    global max_word_count
+    global word_freq
+    global subdomain_pages
+
     extracted_urls = []
     redirected_urls = []
+
     # Check if the response is valid
     if resp.status in (301, 302, 307, 308):
         if "Location" in resp.headers:
@@ -54,20 +76,25 @@ def extract_next_links(url, resp):
             try:
                 check_politeness(url)
 
-                unique_urls = set()  # Use a set to store unique URLs
                 normalized_u = normalize_url(url, resp.url)  # Normalize URL
                 unique_urls.add(normalized_u)
-                url_count = len(unique_urls)  # Count unique URLS
+
+                parsed_url = urlparse(resp.url)
+                seperated_subdomain = parsed_url.netloc # .netloc is to get the net location of the subdomain
+                domain_parts = seperated_subdomain.split(".") # split the domain by parts
+                if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": # making sure that's a subdomain
+                    if seperated_subdomain not in subdomain_pages:
+                        subdomain_pages[normalized_u] = set()
+                    subdomain_pages[normalized_u].add(normalized_u)
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
 
-                # Find the longest page
-                max_words = 0
-                longest_page = None
-                num_words, word_freq = extract_text(parsed_content)
-                if num_words > max_words:
-                    max_words = num_words
+                num_words, word_freq1 = extract_text(parsed_content)
+                word_freq += word_freq1
+
+                if num_words > max_word_count:
+                    max_word_count = num_words
                     longest_page = resp.url
 
                 # Identify high textual information content
@@ -83,13 +110,13 @@ def extract_next_links(url, resp):
                             extracted_urls.append(normalized_url)
 
                     # Return the parsed content
-                    return extracted_urls, longest_page, max_words, word_freq, url_count
+                    return extracted_urls
 
             except Exception as e:
                 print("Error:", e)
-                return [], None, None
+                return []
         else:
-            return [], None, None
+            return []
 
 def is_dead_url(resp):
     if len(resp.raw_response.content) == 0:
@@ -174,18 +201,6 @@ def should_follow_url(url):
     parsed_url = urlparse(url)
     # Follow only URLs that start with "http" or "https"
     return parsed_url.scheme in {"http", "https"} # to be adjusted if there are specific requirements added
-
-def count_subdomains(crawled_urls):
-    '''How many subdomains did you find in the ics.uci.edu domain?'''
-    subdomain_count = 0 # initialize the subdomain_count
-    for url in crawled_urls: # iterate through the parameters
-        parsed_url = urlparse(url)
-        seperated_subdomain = parsed_url.netloc # .netloc is to get the net location of the subdomain
-        domain_parts = seperated_subdomain.split(".") # split the domain by parts
-        if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": # making sure that's a subdomain
-            subdomain_count += 1 # increment the count
-
-    return subdomain_count
 
 def detect_and_avoid_large_files(resp):
     '''Detect and avoid crawling very large files, especially if they have low information value'''
