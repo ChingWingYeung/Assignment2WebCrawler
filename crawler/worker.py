@@ -35,9 +35,10 @@ class Worker(Thread):
                 print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
                 print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
                 print("Subdomains:")
-                print(f"There are {num_similar_page} pages that have similar information or no infomation .")
                 for subdomain, pages in subdomain_pages.items():
                     print(f"{subdomain}, {len(pages)}")
+                print(f"There are {num_similar_page} pages that have similar information or no information.")
+
 
                 break
             resp = download(tbd_url, self.config, self.logger)

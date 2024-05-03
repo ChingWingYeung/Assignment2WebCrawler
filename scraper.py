@@ -17,23 +17,7 @@ subdomain_pages = {}
 hashed_list = []
 simList = []
 def scraper(url, resp):
-    # global unique_urls
-    # global longest_page
-    # global max_word_count
-    # global word_freq
-    # global subdomain_pages
-
     links= extract_next_links(url, resp)
-    # fifty_common_words = word_freq.most_common(50)
-    # unique_page_count = len(unique_urls)  # Count unique URLS
-
-    # print(f"There are {unique_page_count} unique pages.")
-    # print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
-    # print("The 50 most common words in the entire set of pages are: ", fifty_common_words)
-    # print("Subdomains:")
-    for subdomain, pages in subdomain_pages.items():
-        print(f"{subdomain}, {len(pages)}")
-
     return [link for link in links if is_valid(link)]
 
 
