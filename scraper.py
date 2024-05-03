@@ -111,6 +111,8 @@ def extract_next_links(url, resp):
 
                         # Return the parsed content
                         return extracted_urls
+                    else:
+                        return []
                 else:
                     print("Skipped non-informative or duplicate page")
                     return []
