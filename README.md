@@ -3,6 +3,30 @@ ABOUT
 This is the base implementation of a full crawler that uses a spacetime
 cache server to receive requests.
 
+IMPORTANT NOTES
+-------------------------
+There are several required resources need to be installed before you run the program.
+```
+python -m pip install --user -U nltk
+python -m pip3 install beautifulsoup4
+python -m nltk.downloader stopwords
+python -m pip install simhash
+```
+INSTALLATION
+-------------------------
+### Step 1: Clone the Repository
+```
+git clone https://github.com/ChingWingYeung/Assignment2WebCrawler.git
+```
+### Step 2: Install Dependencies and download resources
+```
+cd Assignment2WebCrawler
+```
+### Step 3: Run the program
+```
+python3 launch.py
+```
+
 CONFIGURATION
 -------------------------
 
