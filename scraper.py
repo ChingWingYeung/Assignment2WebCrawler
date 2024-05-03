@@ -308,7 +308,6 @@ def add_if_unique_simhash(new_text, simhash_list):
     new_simhash = get_simhash(new_text)
     for existing_simhash in simhash_list:
         sim_score = (100-new_simhash.distance(existing_simhash))/100
-        print(sim_score)
         if sim_score > 0.95:
             return False
     simhash_list.append(new_simhash)
