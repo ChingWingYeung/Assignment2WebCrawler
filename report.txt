@@ -1,0 +1,27 @@
+Web Crawler Report
+
+Overview
+This report presents the findings of our web crawler deployed to crawl pages under the domain ics.uci.edu.
+It contains information about unique pages, the longest page, the most common words across all crawled pages, and the subdomains within the ics.uci.edu domain we discovered by running the crawler.
+To answer these questions, we created global variables to keep track of pages we visited and processed, and printed out the statistics we've collected during the crawling process when the frontier was empty.
+
+Findings
+1. Unique Pages
+To count unique pages, we first normalized URLs and then stored them in a set().
+The crawler identified a total of [] unique pages within the ics.uci.edu domain. According to the requirements, uniqueness was established solely based on the URL, disregarding any fragment parts.
+
+2. Longest Page
+To find the longest page, we first extract text content from the URL. In order to avoid HTML markup and reduce memory usage, we only counted ['title', 'p', 'div', 'span', 'h1', 'h2', 'h3', 'h4'] tags because we believed these tags usually involves important texts. We then stored counts and URLs and kept track of the maximum.
+The longest page in terms of the number of words was found at []. It contained a total of [] words.
+
+3. 50 Most Common Words
+After analyzing the content of all crawled pages, the crawler identified the 50 most common words. We used NLTK to exclude English stopwords from this analysis. We used a Counter object to keep track of word frequencies.
+The list of common words, ordered by frequency, is as follows:
+[]
+
+4. Subdomains
+To count subdomains, we used a dictionary to store subdomains we visited and the number of unique pages detected.
+The crawler detected [] subdomains within the ics.uci.edu domain. Each subdomain was associated with a certain number of unique pages, as shown in the list below:
+
+Conclusion
+In conclusion, the web crawler successfully retrieved valuable insights about the structure and content of the ics.uci.edu domain. These statistics could be different due to our detection strategies and thresholds.
