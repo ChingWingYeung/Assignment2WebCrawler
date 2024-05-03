@@ -8,8 +8,9 @@ IMPORTANT NOTES
 There are several required resources need to be installed before you run the program.
 ```
 python -m pip install --user -U nltk
-python -m pip3 install beautifulsoup4
+python -m pip install beautifulsoup4
 python -m nltk.downloader stopwords
+python -m nltk.downloader punkt
 python -m pip install simhash
 ```
 INSTALLATION
