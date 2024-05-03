@@ -7,9 +7,7 @@ import nltk
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from collections import Counter
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
+from simhash import Simhash
 
 unique_urls = set()  # Use a set to store unique URLs
 longest_page = None
@@ -17,7 +15,7 @@ max_word_count = 0
 word_freq = Counter()
 subdomain_pages = {}
 hashed_list = []
-similar_page_count = 0
+simList = []
 def scraper(url, resp):
     # global unique_urls
     # global longest_page
@@ -38,6 +36,7 @@ def scraper(url, resp):
 
     return [link for link in links if is_valid(link)]
 
+
 def extract_next_links(url, resp):
     # Implementation required.
     # url: the URL that was used to get the page
@@ -54,7 +53,7 @@ def extract_next_links(url, resp):
     global word_freq
     global subdomain_pages
     global hashed_list
-    global similar_page_count
+    global simList
 
     extracted_urls = []
     redirected_urls = []
@@ -94,10 +93,19 @@ def extract_next_links(url, resp):
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
 
-                if is_informative(parsed_content) and get_content_hash(parsed_content) not in hashed_list:
-                    new_page_hash = get_content_hash(parsed_content)  # check if the html has content and similar hash
-                    hashed_list.append(new_page_hash)  # append new hash value
+                relevant_tags = ['title', 'p', 'div', 'span', 'h1', 'h2', 'h3', 'h4']
+                # Extract text from each relevant tag
+                extracted_text = ""
+                for tag in relevant_tags:
+                    tag_content = parsed_content.find_all(tag)
+                    for content in tag_content:
+                        extracted_text += content.get_text() + " "
 
+                # if is_informative(parsed_content) and get_content_hash(parsed_content) not in hashed_list:
+                #     new_page_hash = get_content_hash(parsed_content)  # check if the html has content and similar hash
+                #     hashed_list.append(new_page_hash)  # append new hash value
+                if add_if_unique_simhash(extracted_text, simList):
+                    #add simhashed content to simlist if similarity less than 95%
                     num_words, word_freq1 = extract_text(parsed_content)
                     word_freq += word_freq1
 
@@ -120,7 +128,6 @@ def extract_next_links(url, resp):
                         # Return the parsed content
                         return extracted_urls
                 else:
-                    similar_page_count += 1
                     print("Skipped non-informative or duplicate page")
                     return []
 
@@ -129,6 +136,7 @@ def extract_next_links(url, resp):
                 return []
         else:
             return []
+
 
 def is_dead_url(resp):
     if len(resp.raw_response.content) == 0:
@@ -163,10 +171,12 @@ def is_valid(url):
         print ("TypeError for ", parsed)
         raise
 
+
 def parse_content(content):
     # Parse the HTML content using BeautifulSoup
     parsed_content = BeautifulSoup(content, 'html.parser')
     return parsed_content
+
 
 def extract_text(parsed_content):
     # Find all relevant tags containing textual content
@@ -177,7 +187,6 @@ def extract_text(parsed_content):
         tag_content = parsed_content.find_all(tag)
         for content in tag_content:
             extracted_text += content.get_text() + " "  # Concatenate text from each tag
-
     # Get text
     words = nltk.word_tokenize(extracted_text)
     # Remove punctuation
@@ -256,13 +265,6 @@ def detect_and_avoid_repeated_patterns(url):
         url_patterns.add(url)
         return False
 
-def is_similar_page(new_content, visited_content, threshold=0.8):
-    tfidf_vectorizer = TfidfVectorizer()
-    corpus = [new_content] + visited_content
-    tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
-    similarity_matrix = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
-    max_similarity = max(similarity_matrix)
-    return max_similarity > threshold
 
 last_time_visit = {}
 def check_politeness(url, delay=0.5):
@@ -297,7 +299,6 @@ def check_missing_title(parsed_content):
     return False
 
 
-
 def get_content_hash(content): # hash the url based on content
     # Remove whitespace and non-content HTML before hashing
     soup = BeautifulSoup(content, 'html.parser')
@@ -305,9 +306,26 @@ def get_content_hash(content): # hash the url based on content
     content_hash = hashlib.sha256(main_text.encode('utf-8')).hexdigest() # UTF-8: convert string to bytes
     return content_hash
 
+
 def is_informative(content): # check if a parsed url has content
     soup = BeautifulSoup(content, 'html.parser')
     text = soup.get_text().strip()
     if len(text.split()) < 300:  # less than 300 words
         return False
+    return True
+
+
+def get_simhash(text):
+    '''simhash text'''
+    return Simhash(text)
+
+def add_if_unique_simhash(new_text, simhash_list):
+    '''add simhashed content to simlist'''
+    new_simhash = get_simhash(new_text)
+    for existing_simhash in simhash_list:
+        sim_score = (100-new_simhash.distance(existing_simhash))/100
+        print(sim_score)
+        if sim_score > 0.95:
+            return False
+    simhash_list.append(new_simhash)
     return True
