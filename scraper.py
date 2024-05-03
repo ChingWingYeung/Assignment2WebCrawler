@@ -70,9 +70,10 @@ def extract_next_links(url, resp):
                 seperated_subdomain = parsed_url.netloc # .netloc is to get the net location of the subdomain
                 domain_parts = seperated_subdomain.split(".") # split the domain by parts
                 if len(domain_parts) > 2 and domain_parts[-2] == "uci" and domain_parts[-1] == "edu": # making sure that's a subdomain
-                    if seperated_subdomain not in subdomain_pages:
-                        subdomain_pages[normalized_u] = set()
-                    subdomain_pages[normalized_u].add(normalized_u)
+                    sub = parsed_url.scheme + "://" + parsed_url.netloc
+                    if sub not in subdomain_pages:
+                        subdomain_pages[sub] = set()
+                    subdomain_pages[sub].add(sub)
 
                 # Parse the content and extract links
                 parsed_content = parse_content(resp.raw_response.content)
