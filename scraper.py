@@ -49,11 +49,11 @@ def extract_next_links(url, resp):
             redirected_urls.append(new_url)
         else:
             print("Can't fetch the redirected url")
-            pass
+            return []
     if resp.status != 200 or (is_valid(resp.url) == False):
         # Print out the error message
         print("Error:", resp.status, resp.error)
-        pass
+        return []
     else:
         if (not is_dead_url(resp)
                 and not detect_and_avoid_large_files(resp)
