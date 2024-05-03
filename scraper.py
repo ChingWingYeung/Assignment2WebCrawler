@@ -155,7 +155,11 @@ def is_valid(url):
 
     except TypeError:
         print ("TypeError for ", parsed)
-        raise
+        return False
+    except Exception as e:
+        # Handle any other exceptions that might be raised
+        print("Error:", e)
+        return False
 
 
 def parse_content(content):
