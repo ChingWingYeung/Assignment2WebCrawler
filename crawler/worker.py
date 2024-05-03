@@ -23,13 +23,12 @@ class Worker(Thread):
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")
 
-                '''check this part!!!'''
+                # Access and print global variables from the scraper module
                 unique_page_count = len(scraper.unique_urls)  # Count unique URLS
                 longest_page = scraper.longest_page
                 max_word_count = scraper.max_word_count
                 fifty_common_words = scraper.word_freq.most_common(50)
                 subdomain_pages = scraper.subdomain_pages
-                #num_similar_page = scraper.similar_page_count
 
                 print(f"There are {unique_page_count} unique pages.")
                 print(f"The longest page in terms of words is {longest_page}, with {max_word_count} words.")
@@ -37,7 +36,6 @@ class Worker(Thread):
                 print("Subdomains:")
                 for subdomain, pages in subdomain_pages.items():
                     print(f"{subdomain}, {len(pages)}")
-                #print(f"There are {num_similar_page} pages that have similar information or no information.")
 
 
                 break
